@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/app/utils/pool';
 
-export async function GET(_: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(_: NextRequest, context: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await context.params;
     const { rows } = await pool.query(
       `SELECT id, title, slug, excerpt, content, location, trip_date, cover_image_url, created_at
        FROM posts WHERE slug = $1 AND is_published = TRUE`,
-      [params.slug]
+      [slug]
     );
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ data: rows[0] });
@@ -16,8 +17,9 @@ export async function GET(_: NextRequest, { params }: { params: { slug: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await context.params;
     const body = await req.json();
     const fields = ['title','excerpt','content','location','trip_date','cover_image_url','is_published'] as const;
     const setParts: string[] = [];
@@ -36,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
-    values.push(params.slug);
+    values.push(slug);
 
     const { rows } = await pool.query(
       `UPDATE posts SET ${setParts.join(', ')}, updated_at = now() WHERE slug = $${idx} RETURNING id, title, slug, excerpt, content, location, trip_date, cover_image_url, is_published, created_at, updated_at`,
@@ -51,9 +53,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { slug: string } }) {
+export async function DELETE(_: NextRequest, context: { params: Promise<{ slug: string }> }) {
   try {
-    const { rowCount } = await pool.query('DELETE FROM posts WHERE slug = $1', [params.slug]);
+    const { slug } = await context.params;
+    const { rowCount } = await pool.query('DELETE FROM posts WHERE slug = $1', [slug]);
     if (rowCount === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (err: any) {
