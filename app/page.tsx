@@ -1,65 +1,50 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { getBaseUrl } from '@/app/utils/baseUrl';
 
-export default function Home() {
+async function getLatest() {
+  const res = await fetch(`${getBaseUrl()}/api/posts?limit=3`, { next: { revalidate: 60 } });
+  if (!res.ok) return [] as any[];
+  const data = await res.json();
+  return data.data || [];
+}
+
+export default async function Home() {
+  const latest = await getLatest();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-10">
+      <section className="rounded-2xl bg-gradient-to-br from-amber-100 to-rose-50 p-8 border border-amber-200">
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-3">Oman Travel Blog</h1>
+        <p className="text-zinc-600 max-w-2xl">Share your stories from Muscat, deserts, wadis, forts, and coastline. Post photos, dates, and thoughts all in one place.</p>
+        <div className="mt-6 flex gap-3">
+          <Link href="/stories/new" className="inline-flex items-center rounded-full bg-amber-600 text-white px-4 py-2 hover:bg-amber-700">Add a Story</Link>
+          <Link href="/stories" className="inline-flex items-center rounded-full border border-amber-300 px-4 py-2 text-amber-800 hover:bg-amber-100">Browse Stories</Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Latest stories</h2>
+        {latest.length === 0 ? (
+          <p className="text-zinc-600">No stories yet. Start with your first post!</p>
+        ) : (
+          <ul className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {latest.map((post: any) => (
+              <li key={post.slug} className="rounded-xl overflow-hidden border border-zinc-200 bg-white">
+                {post.cover_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={post.cover_image_url} alt={post.title} className="h-40 w-full object-cover" />
+                ) : (
+                  <div className="h-40 w-full bg-amber-50" />
+                )}
+                <div className="p-4">
+                  <h3 className="font-medium"><Link className="hover:text-amber-700" href={`/stories/${post.slug}`}>{post.title}</Link></h3>
+                  {post.location && <p className="text-sm text-zinc-600">{post.location}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
